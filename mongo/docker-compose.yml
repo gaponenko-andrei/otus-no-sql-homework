@@ -1,0 +1,39 @@
+version: '3.9'
+
+services:
+  mongo-rs-1:
+    image: mongo:7
+    container_name: mongo-rs-1
+    hostname: mongo-rs-1
+    command: [ "bash", "-c", "
+        mongod --replSet my-replica-set --bind_ip_all --port 30001 --dbpath /data/db &  
+        sleep 10 &&
+        mongosh --port 30001 --eval '
+          rs.initiate({
+              _id: \"my-replica-set\",
+              members: [
+                { _id: 0, host: \"mongo-rs-1:30001\" },
+                { _id: 1, host: \"mongo-rs-2:30002\" },
+                { _id: 2, host: \"mongo-rs-3:30003\" }
+              ]
+            });' &&
+        wait
+      " ]
+    ports:
+      - "30001:30001"
+
+  mongo-rs-2:
+    image: mongo:7
+    container_name: mongo-rs-2
+    hostname: mongo-rs-2
+    command: ["--replSet", "my-replica-set", "--bind_ip_all", "--port", "30002"]
+    ports:
+      - "30002:30002"
+
+  mongo-rs-3:
+    image: mongo:7
+    container_name: mongo-rs-3
+    hostname: mongo-rs-3
+    command: ["--replSet", "my-replica-set", "--bind_ip_all", "--port", "30003"]
+    ports:
+      - "30003:30003"
