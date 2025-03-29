@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.9'
 
 volumes:
   mongos-router-data:
@@ -16,22 +16,21 @@ volumes:
   mongo-shard3-rs3-data:
 
 services:
-
   # ==============================================
   #                    Роутер
   # ==============================================
-
   mongos-router:
     image: mongo:7
     container_name: mongos-router
     hostname: mongos-router
     volumes:
       - mongos-router-data:/data/db
+      - ./mongodb-keyfile:/etc/mongo-keyfile:ro
     depends_on:
       - mongo-config-server-1
       - mongo-config-server-2
       - mongo-config-server-3
-    command: mongos --configdb config-rs/mongo-config-server-1:20001,mongo-config-server-2:20002,mongo-config-server-3:20003 --bind_ip_all
+    command: mongos --configdb config-rs/mongo-config-server-1:20001,mongo-config-server-2:20002,mongo-config-server-3:20003 --bind_ip_all --keyFile /etc/mongo-keyfile
     ports:
       - "10001:27017"
 
@@ -45,8 +44,9 @@ services:
     hostname: mongo-config-server-1
     volumes:
       - mongo-config-server-1-data:/data/db
+      - ./mongodb-keyfile:/etc/mongo-keyfile:ro
     command: [ "bash", "-c", "
-        mongod --configsvr --replSet config-rs --bind_ip_all --port 20001 --dbpath /data/db &  
+        mongod --configsvr --replSet config-rs --bind_ip_all --port 20001 --dbpath /data/db --keyFile /etc/mongo-keyfile --auth &
         sleep 10 &&
         mongosh --port 20001 --eval '
           try {
@@ -71,7 +71,8 @@ services:
     hostname: mongo-config-server-2
     volumes:
       - mongo-config-server-2-data:/data/db
-    command: [ "--configsvr", "--replSet", "config-rs", "--bind_ip_all", "--port", "20002" ]
+      - ./mongodb-keyfile:/etc/mongo-keyfile:ro
+    command: ["--configsvr", "--replSet", "config-rs", "--bind_ip_all", "--port", "20002", "--keyFile", "/etc/mongo-keyfile", "--auth"]
     ports:
       - "20002:20002"
 
@@ -81,22 +82,23 @@ services:
     hostname: mongo-config-server-3
     volumes:
       - mongo-config-server-3-data:/data/db
-    command: [ "--configsvr", "--replSet", "config-rs", "--bind_ip_all", "--port", "20003" ]
+      - ./mongodb-keyfile:/etc/mongo-keyfile:ro
+    command: ["--configsvr", "--replSet", "config-rs", "--bind_ip_all", "--port", "20003", "--keyFile", "/etc/mongo-keyfile", "--auth"]
     ports:
       - "20003:20003"
 
   # ==============================================
   #                  Первый шард
   # ==============================================
-
   mongo-shard1-rs1:
     image: mongo:7
     container_name: mongo-shard1-rs1
     hostname: mongo-shard1-rs1
     volumes:
       - mongo-shard1-rs1-data:/data/db
+      - ./mongodb-keyfile:/etc/mongo-keyfile:ro
     command: [ "bash", "-c", "
-        mongod --shardsvr --replSet shard1-rs --bind_ip_all --port 30001 --dbpath /data/db &  
+        mongod --shardsvr --replSet shard1-rs --bind_ip_all --port 30001 --dbpath /data/db --keyFile /etc/mongo-keyfile --auth &
         sleep 10 &&
         mongosh --port 30001 --eval '
           try {
@@ -120,7 +122,8 @@ services:
     hostname: mongo-shard1-rs2
     volumes:
       - mongo-shard1-rs2-data:/data/db
-    command: ["--shardsvr", "--replSet", "shard1-rs", "--bind_ip_all", "--port", "30002"]
+      - ./mongodb-keyfile:/etc/mongo-keyfile:ro
+    command: ["--shardsvr", "--replSet", "shard1-rs", "--bind_ip_all", "--port", "30002", "--keyFile", "/etc/mongo-keyfile", "--auth"]
     ports:
       - "30002:30002"
 
@@ -130,22 +133,23 @@ services:
     hostname: mongo-shard1-rs3
     volumes:
       - mongo-shard1-rs3-data:/data/db
-    command: ["--shardsvr", "--replSet", "shard1-rs", "--bind_ip_all", "--port", "30003"]
+      - ./mongodb-keyfile:/etc/mongo-keyfile:ro
+    command: ["--shardsvr", "--replSet", "shard1-rs", "--bind_ip_all", "--port", "30003", "--keyFile", "/etc/mongo-keyfile", "--auth"]
     ports:
       - "30003:30003"
 
   # ==============================================
   #                  Второй шард
   # ==============================================
-
   mongo-shard2-rs1:
     image: mongo:7
     container_name: mongo-shard2-rs1
     hostname: mongo-shard2-rs1
     volumes:
       - mongo-shard2-rs1-data:/data/db
+      - ./mongodb-keyfile:/etc/mongo-keyfile:ro
     command: [ "bash", "-c", "
-        mongod --shardsvr --replSet shard2-rs --bind_ip_all --port 40001 --dbpath /data/db &  
+        mongod --shardsvr --replSet shard2-rs --bind_ip_all --port 40001 --dbpath /data/db --keyFile /etc/mongo-keyfile --auth &
         sleep 10 &&
         mongosh --port 40001 --eval '
           try {
@@ -169,7 +173,8 @@ services:
     hostname: mongo-shard2-rs2
     volumes:
       - mongo-shard2-rs2-data:/data/db
-    command: ["--shardsvr", "--replSet", "shard2-rs", "--bind_ip_all", "--port", "40002"]
+      - ./mongodb-keyfile:/etc/mongo-keyfile:ro
+    command: ["--shardsvr", "--replSet", "shard2-rs", "--bind_ip_all", "--port", "40002", "--keyFile", "/etc/mongo-keyfile", "--auth"]
     ports:
       - "40002:40002"
 
@@ -179,22 +184,23 @@ services:
     hostname: mongo-shard2-rs3
     volumes:
       - mongo-shard2-rs3-data:/data/db
-    command: ["--shardsvr", "--replSet", "shard2-rs", "--bind_ip_all", "--port", "40003"]
+      - ./mongodb-keyfile:/etc/mongo-keyfile:ro
+    command: ["--shardsvr", "--replSet", "shard2-rs", "--bind_ip_all", "--port", "40003", "--keyFile", "/etc/mongo-keyfile", "--auth"]
     ports:
       - "40003:40003"
 
   # ==============================================
   #                  Третий шард
   # ==============================================
-
   mongo-shard3-rs1:
     image: mongo:7
     container_name: mongo-shard3-rs1
     hostname: mongo-shard3-rs1
     volumes:
       - mongo-shard3-rs1-data:/data/db
+      - ./mongodb-keyfile:/etc/mongo-keyfile:ro
     command: [ "bash", "-c", "
-        mongod --shardsvr --replSet shard3-rs --bind_ip_all --port 50001 --dbpath /data/db &  
+        mongod --shardsvr --replSet shard3-rs --bind_ip_all --port 50001 --dbpath /data/db --keyFile /etc/mongo-keyfile --auth &
         sleep 10 &&
         mongosh --port 50001 --eval '
           try {
@@ -218,7 +224,8 @@ services:
     hostname: mongo-shard3-rs2
     volumes:
       - mongo-shard3-rs2-data:/data/db
-    command: ["--shardsvr", "--replSet", "shard3-rs", "--bind_ip_all", "--port", "50002"]
+      - ./mongodb-keyfile:/etc/mongo-keyfile:ro
+    command: ["--shardsvr", "--replSet", "shard3-rs", "--bind_ip_all", "--port", "50002", "--keyFile", "/etc/mongo-keyfile", "--auth"]
     ports:
       - "50002:50002"
 
@@ -228,6 +235,7 @@ services:
     hostname: mongo-shard3-rs3
     volumes:
       - mongo-shard3-rs3-data:/data/db
-    command: ["--shardsvr", "--replSet", "shard3-rs", "--bind_ip_all", "--port", "50003"]
+      - ./mongodb-keyfile:/etc/mongo-keyfile:ro
+    command: ["--shardsvr", "--replSet", "shard3-rs", "--bind_ip_all", "--port", "50003", "--keyFile", "/etc/mongo-keyfile", "--auth"]
     ports:
       - "50003:50003"
