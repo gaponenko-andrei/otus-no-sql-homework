@@ -1,0 +1,60 @@
+x-cassandra-commons: &x-cassandra-commons
+  healthcheck:
+    test: ["CMD-SHELL", "nodetool statusgossip"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+  environment:
+    - JVM_OPTS=-Xms512M -Xmx1024M
+    - MAX_HEAP_SIZE=1G
+    - HEAP_NEWSIZE=256M
+    - CASSANDRA_CLUSTER_NAME=docker-cassandra-cluster
+    - CASSANDRA_ENDPOINT_SNITCH=SimpleSnitch
+    - CASSANDRA_DC=docker-cassandra-dc
+    - CASSANDRA_RACK=docker-cassandra-rack
+    - CASSANDRA_SEEDS=cassandra1,cassandra2,cassandra3
+
+services:
+  cassandra1:
+    image: cassandra:latest
+    container_name: cassandra1
+    volumes:
+      - cassandra_data1:/var/lib/cassandra
+    networks:
+      - network
+    ports:
+      - "9042:9042" # CQL порт
+      - "7000:7000" # Inter-node communication
+      - "7001:7001" # TLS inter-node communication
+    <<: *x-cassandra-commons
+
+  cassandra2:
+    image: cassandra:latest
+    container_name: cassandra2
+    volumes:
+      - cassandra_data2:/var/lib/cassandra
+    networks:
+      - network
+    depends_on:
+      - cassandra1
+    <<: *x-cassandra-commons
+
+  cassandra3:
+    image: cassandra:latest
+    container_name: cassandra3
+    volumes:
+      - cassandra_data3:/var/lib/cassandra
+    networks:
+      - network
+    depends_on:
+      - cassandra1
+    <<: *x-cassandra-commons
+
+volumes:
+  cassandra_data1:
+  cassandra_data2:
+  cassandra_data3:
+
+networks:
+  network:
+    driver: bridge
