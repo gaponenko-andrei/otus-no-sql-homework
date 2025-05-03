@@ -1,0 +1,74 @@
+x-clickhouse-commons: &x-clickhouse-commons
+  image: clickhouse/clickhouse-server:latest
+  environment:
+    - CLICKHOUSE_DB=default
+    - CLICKHOUSE_USER=default
+    - CLICKHOUSE_PASSWORD=default
+    - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
+  networks:
+    - sharded_cluster_net
+
+services:
+
+  zookeeper:
+    image: 'bitnami/zookeeper:latest'
+    networks:
+      - sharded_cluster_net
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+      - ZOOKEEPER_CLIENT_PORT=2181
+    ports:
+      - "2182:2181"
+      - "2888:2888"
+      - "3888:3888"
+
+  clickhouse-node1:
+    hostname: clickhouse-node1
+    depends_on:
+      - zookeeper
+    ports:
+      - "8123:8123"  # HTTP интерфейс
+      - "9000:9000"  # Native protocol
+    volumes:
+      - clickhouse_data1:/var/lib/clickhouse
+      - ./configs/users.d/:/etc/clickhouse-server/users.d/
+      - ./configs/config.d/:/etc/clickhouse-server/config.d/
+      - ./configs/macros1.xml:/etc/clickhouse-server/config.d/macros.xml
+    <<: *x-clickhouse-commons
+
+  clickhouse-node2:
+    hostname: clickhouse-node2
+    depends_on:
+      - zookeeper
+    ports:
+      - "8124:8123"  # HTTP интерфейс
+      - "9001:9000"  # Native protocol
+    volumes:
+      - clickhouse_data2:/var/lib/clickhouse
+      - ./configs/users.d/:/etc/clickhouse-server/users.d/
+      - ./configs/config.d/:/etc/clickhouse-server/config.d/
+      - ./configs/macros2.xml:/etc/clickhouse-server/config.d/macros.xml
+    <<: *x-clickhouse-commons
+
+  clickhouse-node3:
+    hostname: clickhouse-node3
+    depends_on:
+      - zookeeper
+    ports:
+      - "8125:8123"  # HTTP интерфейс
+      - "9002:9000"  # Native protocol
+    volumes:
+      - clickhouse_data3:/var/lib/clickhouse
+      - ./configs/users.d/:/etc/clickhouse-server/users.d/
+      - ./configs/config.d/:/etc/clickhouse-server/config.d/
+      - ./configs/macros3.xml:/etc/clickhouse-server/config.d/macros.xml
+    <<: *x-clickhouse-commons
+
+volumes:
+  clickhouse_data1:
+  clickhouse_data2:
+  clickhouse_data3:
+
+networks:
+  sharded_cluster_net:
+    driver: bridge
