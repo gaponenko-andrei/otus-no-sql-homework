@@ -1,0 +1,2 @@
+user default on >agp32pass ~* +@all
+user agp32 on >agp32pass ~* +@all
